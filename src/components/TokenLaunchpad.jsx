@@ -1,3 +1,6 @@
+import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptAccount, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Keypair, SystemProgram, Transaction } from "@solana/web3.js";
 import React, { useState } from "react";
 
 export default function TokenLaunchpad() {
@@ -5,9 +8,34 @@ export default function TokenLaunchpad() {
   const [symbol, setSymbol] = useState("");
   const [image, setImage] = useState("");
   const [supply, setSupply] = useState("");
+  const { connection } = useConnection();
+  const wallet = useWallet();
 
-  const submit = () => {
-    alert(name + " " + symbol + " " + image + " " + supply);
+  const submit = async () => {
+    if(!wallet.connected) {
+      alert("Please connect your wallet");
+      return;
+    }
+    const mintKeypair = Keypair.generate();
+    const lamports = await getMinimumBalanceForRentExemptMint(connection);
+    
+    const transaction = new Transaction().add(
+      SystemProgram.createAccount({
+        fromPubkey: wallet.publicKey,
+        newAccountPubkey: mintKeypair.publicKey,
+        space: MINT_SIZE,
+        lamports,
+        programId: TOKEN_PROGRAM_ID
+      }),
+      createInitializeMint2Instruction(mintKeypair.publicKey, 9, wallet.publicKey, wallet.publicKey, TOKEN_PROGRAM_ID)
+    );
+
+    transaction.feePayer = wallet.publicKey;
+    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    transaction.partialSign(mintKeypair);
+
+    await wallet.sendTransaction(transaction, connection);
+    console.log(`Token mint created: ${mintKeypair.publicKey.toBase58()}`);
   }
   
     return (

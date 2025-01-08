@@ -6,7 +6,7 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 export default function App() {
   return (
     <ConnectionProvider endpoint="https://api.devnet.solana.com">
-      <WalletProvider wallets={[]}>
+      <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>
           <div style={{ display: "flex", justifyContent: "space-between"}}>
             <WalletMultiButton />
